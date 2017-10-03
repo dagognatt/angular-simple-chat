@@ -21,7 +21,8 @@ function simpleChat($timeout) {
             sendButtonText: '@',
             composerPlaceholderText: '@',
             liveMode: '=',
-            liveFlagFunction: '='
+            liveFlagFunction: '=',
+            mentions: '='
         }
     };
     return directive;
@@ -57,9 +58,9 @@ angular
     .controller('simpleChatController', simpleChatController);
 
 /* @ngInject */
-function simpleChatController() {
+function simpleChatController($scope) {
     this.options = new SimpleChatConfig();
-
+    
     if (angular.isDefined(this.showUserAvatar)) {
         this.options.setShowUserAvatar(this.showUserAvatar);
     }

@@ -26,14 +26,61 @@ function messageComposer() {
         messageComposerCtrl.options = simpleChatCtrl.options;
         messageComposerCtrl.messages = simpleChatCtrl.messages;
         messageComposerCtrl.liveFlagFunction = simpleChatCtrl.liveFlagFunction;
+        messageComposerCtrl.mentions = simpleChatCtrl.mentions;
+        messageComposerCtrl.element = element.find('textarea')[0];
     }
 }
+function getInputSelection(el) {
+    var start = 0, end = 0, normalizedValue, range,
+        textInputRange, len, endRange;
 
+    if (typeof el.selectionStart == "number" && typeof el.selectionEnd == "number") {
+        start = el.selectionStart;
+        end = el.selectionEnd;
+    } else {
+        range = document.selection.createRange();
+
+        if (range && range.parentElement() == el) {
+            len = el.value.length;
+            normalizedValue = el.value.replace(/\r\n/g, "\n");
+
+            // Create a working TextRange that lives only in the input
+            textInputRange = el.createTextRange();
+            textInputRange.moveToBookmark(range.getBookmark());
+
+            // Check if the start and end of the selection are at the very end
+            // of the input, since moveStart/moveEnd doesn't return what we want
+            // in those cases
+            endRange = el.createTextRange();
+            endRange.collapse(false);
+
+            if (textInputRange.compareEndPoints("StartToEnd", endRange) > -1) {
+                start = end = len;
+            } else {
+                start = -textInputRange.moveStart("character", -len);
+                start += normalizedValue.slice(0, start).split("\n").length - 1;
+
+                if (textInputRange.compareEndPoints("EndToEnd", endRange) > -1) {
+                    end = len;
+                } else {
+                    end = -textInputRange.moveEnd("character", -len);
+                    end += normalizedValue.slice(0, end).split("\n").length - 1;
+                }
+            }
+        }
+    }
+
+    return {
+        start: start,
+        end: end
+    };
+}
 /* @ngInject */
 function messageComposerController($scope) {
+
     var that = this,
         resetLiveLastMessageReference = false,
-        _sendFx = function() {
+        _sendFx = function () {
             if (!angular.isDefined(that.rawmessage)) {
                 return;
             }
@@ -84,13 +131,35 @@ function messageComposerController($scope) {
                 that.rawmessage = '';
             }
         };
-    this._send = function() {
+    $scope.$on('message-composer:appendText', function (event, text) {
+        that.rawmessage += text;
+    });
+    this._send = function () {
         if (this.options.liveMode) {
             resetLiveLastMessageReference = true;
         }
         _sendFx();
     };
-    this._onKeyUp = function() {
+    this._onKeyUp = function (event) {
+        var foo = getInputSelection(that.element);
+        var charBeforeCursor;
+        if (that.rawmessage && that.rawmessage.length > 0) 
+            charBeforeCursor = that.rawmessage.substring(foo.start-1, foo.start);
+        else 
+            charBeforeCursor = '';
+        
+        if (event.key == '@' || charBeforeCursor == '@') {
+            $scope.$emit('mention', 'emit from message-composer');
+            this.inMention = true;
+        } else {
+            if (!charBeforeCursor.match(/\w/) || this.inMention && (event.keyCode == 32 || event.keyCode == 8 || event.keyCode == 46 )) {
+                $scope.$emit('mention-stop');
+                this.inMention = false;
+            }
+        }
+        if (this.inMention && foo.start == foo.end) {
+            // $scope.$emit('mention-query-input', charBeforeCursor);
+        }
         if (this.options.liveMode) {
             _sendFx();
         }

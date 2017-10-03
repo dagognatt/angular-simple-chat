@@ -1,12 +1,13 @@
 <form name="composeForm">
-    <textarea ng-attr-placeholder="{{mc.composerPlaceholderText || 'Write your message here.'}}"
+    <textarea  ng-attr-placeholder="{{mc.composerPlaceholderText || 'Write your message here.'}}"
             ng-model="mc.rawmessage"
             name="message"
             vo-key-up
-            on-key-up="mc._onKeyUp()"
+            ng-keyup="mc._onKeyUp($event)"
             on-enter-key="mc._send()"
             options="mc.options"
-            ng-required="true"></textarea>
+            ng-required="true"
+            id="message-composer"></textarea>
     <button ng-click="mc._send()"
         ng-disabled="composeForm.$invalid">{{mc.sendButtonText || 'Send'}}</button>
 </form>
