@@ -1,5 +1,5 @@
 /*
- * angular-simple-chat 1.0.12
+ * angular-simple-chat 1.0.14
  * @description AngularJS chat directive
  * @link https://github.com/vogloblinsky/angular-simple-chat#readme
  * @license MIT
@@ -477,7 +477,7 @@ function messageComposer() {
     function link(scope, element, attrs, controllers) {
         var simpleChatCtrl = controllers[0],
             messageComposerCtrl = controllers[1];
-
+        messageComposerCtrl.foreignobjectid = simpleChatCtrl.foreignobjectid;
         messageComposerCtrl.localUser = simpleChatCtrl.localUser;
         messageComposerCtrl.sendFunction = simpleChatCtrl.sendFunction;
         messageComposerCtrl.sendButtonText = simpleChatCtrl.sendButtonText;
@@ -536,7 +536,7 @@ function getInputSelection(el) {
 }
 /* @ngInject */
 function messageComposerController($scope) {
-
+    
     var that = this,
         resetLiveLastMessageReference = false,
         _sendFx = function () {
@@ -590,8 +590,11 @@ function messageComposerController($scope) {
                 that.rawmessage = '';
             }
         };
-    $scope.$on('message-composer:appendText', function (event, text) {
-        that.rawmessage += text;
+    $scope.$on('message-composer:appendText', function (event, obj) {
+        if (obj && obj.uuid && obj.text) {
+            if (that.foreignobjectid == obj.uuid)
+                that.rawmessage += obj.text;
+        }
     });
     this._send = function () {
         if (this.options.liveMode) {
@@ -599,7 +602,16 @@ function messageComposerController($scope) {
         }
         _sendFx();
     };
+    this._onKeyDown = function (event) {
+        if (event.keyCode === 38 || event.keyCode === 40) {
+            event.preventDefault();
+            return false;
+        }
+    }
     this._onKeyUp = function (event) {
+        if (event.keyCode == 38) {
+            $scope.$emit('mention-up', this.foreignobjectid);
+        }
         var foo = getInputSelection(that.element);
         var charBeforeCursor;
         if (that.rawmessage && that.rawmessage.length > 0) 
@@ -608,12 +620,14 @@ function messageComposerController($scope) {
             charBeforeCursor = '';
         
         if (event.key == '@' || charBeforeCursor == '@') {
-            $scope.$emit('mention', 'emit from message-composer');
+            $scope.$emit('mention', this.foreignobjectid);
             this.inMention = true;
         } else {
             if (!charBeforeCursor.match(/\w/) || this.inMention && (event.keyCode == 32 || event.keyCode == 8 || event.keyCode == 46 )) {
-                $scope.$emit('mention-stop');
+                $scope.$emit('mention-stop', this.foreignobjectid);
                 this.inMention = false;
+            } else if (this.inMention && event.keyCode == 38) {
+                console.log('arrow up!');
             }
         }
         if (this.inMention && foo.start == foo.end) {
@@ -672,7 +686,8 @@ function simpleChat($timeout) {
             composerPlaceholderText: '@',
             liveMode: '=',
             liveFlagFunction: '=',
-            mentions: '='
+            mentions: '=',
+            foreignobjectid: '='
         }
     };
     return directive;
@@ -766,6 +781,6 @@ function voKeyUp($timeout) {
 }
 
 angular.module("angular-simple-chat.directives").run(["$templateCache", function($templateCache) {$templateCache.put("directives/chat-bubble/chat-bubble.html","<div ng-if=\"cb.localUser.userId !== cb.message.userId\">\n    <img class=\"profile-avatar left\"\n        ng-src=\"{{cb.message.avatar}}\"\n        ng-if=\"cb.options.showUserAvatar\"/>\n    <div class=\"chat-bubble-container left\"\n        ng-class=\"{\'reset-margin-left\': !cb.options.showUserAvatar}\">\n        <div class=\"message-detail\" ng-if=\"cb.options.showBubbleInfos\">\n            <b>{{cb.message.userName}}, </b>\n            <span am-time-ago=\"cb.message.date\"></span>\n        </div>\n        <div class=\"chat-bubble left\">\n            <div class=\"message\" ng-bind-html=\"cb.message.text\">{{cb.message.text}}</div>\n        </div>\n    </div>\n</div>\n<div ng-if=\"cb.localUser.userId === cb.message.userId\">\n    <img class=\"profile-avatar right\"\n        ng-src=\"{{cb.localUser.avatar}}\"\n        ng-if=\"cb.options.showUserAvatar\"/>\n    <div class=\"chat-bubble-container right\"\n        ng-class=\"{\'reset-margin-right\': !cb.options.showUserAvatar}\">\n        <div class=\"message-detail\" ng-if=\"cb.options.showBubbleInfos\">\n            <b>{{cb.localUser.userName}}, </b>\n            <span am-time-ago=\"cb.message.date\"></span>\n        </div>\n        <div class=\"chat-bubble right\">\n            <div class=\"message\" ng-bind-html=\"cb.message.text\"></div>\n        </div>\n    </div>\n</div>\n");
-$templateCache.put("directives/message-composer/message-composer.html","<form name=\"composeForm\">\n    <textarea  ng-attr-placeholder=\"{{mc.composerPlaceholderText || \'Write your message here.\'}}\"\n            ng-model=\"mc.rawmessage\"\n            name=\"message\"\n            vo-key-up\n            ng-keyup=\"mc._onKeyUp($event)\"\n            on-enter-key=\"mc._send()\"\n            options=\"mc.options\"\n            ng-required=\"true\"\n            id=\"message-composer\"></textarea>\n    <button ng-click=\"mc._send()\"\n        ng-disabled=\"composeForm.$invalid\">{{mc.sendButtonText || \'Send\'}}</button>\n</form>\n");
+$templateCache.put("directives/message-composer/message-composer.html","<form name=\"composeForm\">\n    <textarea  ng-attr-placeholder=\"{{mc.composerPlaceholderText || \'Write your message here.\'}}\"\n            ng-model=\"mc.rawmessage\"\n            name=\"message\"\n            vo-key-up\n            ng-keyup=\"mc._onKeyUp($event)\"\n            on-enter-key=\"mc._send()\"\n            options=\"mc.options\"\n            ng-required=\"true\"\n            ng-keydown=\"mc._onKeyDown($event)\"\n            ng-attr-id=\"message-composer_{{mc.foreignobjectid}}\"></textarea>\n    <button ng-click=\"mc._send()\" tabindex=\"-1\"\n        ng-disabled=\"composeForm.$invalid\">{{mc.sendButtonText || \'Send\'}}</button>\n</form>\n");
 $templateCache.put("directives/simple-chat/simple-chat.html","<div class=\"simple-chat-container\"\n    ng-class=\"{\'full-height\': !sc.options.showComposer}\">\n    <div ng-repeat=\"message in sc.messages track by message.id\" class=\"message-wrapper\">\n        <chat-bubble\n            message=\"message\"\n            class=\"chat-bubble-main-container\"\n        ></chat-bubble>\n    </div>\n</div>\n<message-composer\n    ng-if=\"sc.options.showComposer\"\n></message-composer>\n");}]);
 }());

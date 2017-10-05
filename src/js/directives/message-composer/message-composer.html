@@ -7,7 +7,8 @@
             on-enter-key="mc._send()"
             options="mc.options"
             ng-required="true"
-            id="message-composer"></textarea>
-    <button ng-click="mc._send()"
+            ng-keydown="mc._onKeyDown($event)"
+            ng-attr-id="message-composer_{{mc.foreignobjectid}}"></textarea>
+    <button ng-click="mc._send()" tabindex="-1"
         ng-disabled="composeForm.$invalid">{{mc.sendButtonText || 'Send'}}</button>
 </form>

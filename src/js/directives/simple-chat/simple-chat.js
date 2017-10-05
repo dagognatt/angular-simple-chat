@@ -22,7 +22,8 @@ function simpleChat($timeout) {
             composerPlaceholderText: '@',
             liveMode: '=',
             liveFlagFunction: '=',
-            mentions: '='
+            mentions: '=',
+            foreignobjectid: '='
         }
     };
     return directive;
