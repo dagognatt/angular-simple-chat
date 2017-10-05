@@ -1,6 +1,6 @@
 {
   "name": "angular-simple-chat",
-  "version": "1.0.12",
+  "version": "1.0.14",
   "description": "AngularJS chat directive",
   "main": "dist/angular-simple-chat.js",
   "scripts": {
@@ -12,9 +12,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://vogloblinsky@github.com/vogloblinsky/angular-simple-chat.git"
+    "url": "git+https://github.com/dagognatt/angular-simple-chat.git"
   },
-  "author": "vogloblinsky <vincent.ogloblinsky@gmail.com>",
+  "author": "dag <dag@kit-manager.no>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/vogloblinsky/angular-simple-chat/issues"
